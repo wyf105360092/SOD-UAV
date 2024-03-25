@@ -1,0 +1,74 @@
+# parameters
+nc: 10  # number of classes
+depth_multiple: 1.0  # model depth multiple
+width_multiple: 1.0  # layer channel multiple
+
+# anchors
+anchors: 4
+
+# yolov7 backbone
+backbone:
+  # [from, number, module, args]
+  [[-1, 1, Conv, [32, 3, 1]],  # 0
+  
+   [-1, 1, Conv, [64, 3, 2]],  # 1-P1/2      
+   [-1, 1, Conv, [64, 3, 1]],
+   
+   [-1, 1, Conv, [128, 3, 2]],  # 3-P2/4  
+   [-1, 1, Yolov7_E_ELAN, [256, 64]], # 4
+         
+   [-1, 1, V7DownSampling, [128]],  # 5-P3/8  
+   [-1, 1, Yolov7_E_ELAN, [512, 128]], # 6
+         
+   [-1, 1, V7DownSampling, [256]],  # 7-P4/16  
+   [-1, 1, Yolov7_E_ELAN, [1024, 256]], # 8
+         
+   [-1, 1, V7DownSampling, [512]],  # 9-P5/32  
+   [-1, 1, Yolov7_E_ELAN, [1024, 256]],  # 10
+  ]
+
+# yolov7 head
+head:
+  [[-1, 1, SPPCSPC, [512]], # 11
+
+   [-1, 1, Conv, [256, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   [8, 1, Conv, [256, 1, 1]], # 14 route backbone P4
+   [[-1, -2], 1, Concat, [1]], # 15
+   
+   [-1, 1, Yolov7_E_ELAN_NECK, [256, 128]], # 16
+   
+   [-1, 1, Conv, [128, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   [6, 1, Conv, [128, 1, 1]], # 19 route backbone P3
+   [[-1, -2], 1, Concat, [1]], # 20
+   
+   [-1, 1, Yolov7_E_ELAN_NECK, [128, 64]], # 21
+    # ------------------------------------------------#
+   [ -1, 1, Conv, [ 64, 1, 1 ] ],
+   [ -1, 1, nn.Upsample, [ None, 2, 'nearest' ] ],
+   [ 4, 1, Conv, [ 64, 1, 1 ] ], # route backbone P2
+   [ [ -1, -2 ], 1, Concat, [ 1 ] ], #25
+
+   [-1, 1, Yolov7_E_ELAN_NECK, [64, 32]], # 26
+  # ------------------------------------------------#
+   [[-1, 21], 1, V7DownSampling_Neck, [64]], # 27
+
+   [-1, 1, Yolov7_E_ELAN_NECK, [128, 64]], # 28
+  # ------------------------------------------------#
+
+   [[-1, 16], 1, V7DownSampling_Neck, [128]], # 29
+
+   [-1, 1, Yolov7_E_ELAN_NECK, [128, 64]], # 30
+
+   [[-1, 11], 1, V7DownSampling_Neck, [256]], # 31
+
+   [-1, 1, Yolov7_E_ELAN_NECK, [256, 128]], # 32
+
+   [26, 1, RepConv, [256, 3, 1]], # 33-P2
+   [28, 1, RepConv, [256, 3, 1]], # 34-P3
+   [30, 1, RepConv, [256, 3, 1]], # 35-P4
+   [32, 1, RepConv, [256, 3, 1]], # 36-P5
+
+   [[33, 34, 35, 36], 1, IDetect_DyHead, [nc, anchors]],   # Detect(P2, P3, P4, P5)
+  ]

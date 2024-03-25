@@ -1,0 +1,7 @@
+train: /home/wangyifu/Datasets/VisDrone/VisDrone2019-DET-train/images  # 
+val: /home/wangyifu/Datasets/VisDrone/VisDrone2019-DET-val/images  # 
+test:  /home/wangyifu/Datasets/VisDrone/VisDrone2019-DET-test-dev/images #
+ 
+# Classes
+nc: 10  # number of classes
+names: ['pedestrian', 'people', 'bicycle', 'car', 'van','truck', 'tricycle', 'awning-tricycle', 'bus', 'motor']  # class names

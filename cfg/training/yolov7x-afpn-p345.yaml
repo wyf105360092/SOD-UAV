@@ -1,0 +1,37 @@
+# parameters
+nc: 80  # number of classes
+depth_multiple: 1.0  # model depth multiple
+width_multiple: 1.0  # layer channel multiple
+
+# anchors
+anchors:
+  - [12,16, 19,36, 40,28]  # P3/8
+  - [36,75, 76,55, 72,146]  # P4/16
+  - [142,110, 192,243, 459,401]  # P5/32
+
+# yolov7 backbone
+backbone:
+  # [from, number, module, args]
+  [[-1, 1, Conv, [40, 3, 1]],  # 0
+  
+   [-1, 1, Conv, [80, 3, 2]],  # 1-P1/2      
+   [-1, 1, Conv, [80, 3, 1]],
+   
+   [-1, 1, Conv, [160, 3, 2]],  # 3-P2/4 
+   [-1, 1, Yolov7x_E_ELAN, [320, 64]], # 4
+
+   [-1, 1, V7DownSampling, [160]], # 5-P3/8
+   [-1, 1, Yolov7x_E_ELAN, [640, 128]], # 6
+   
+   [-1, 1, V7DownSampling, [320]], # 7-P4/16
+   [-1, 1, Yolov7x_E_ELAN, [1280, 256]], # 8
+
+   [-1, 1, V7DownSampling, [640]], # 9-P5/32
+   [-1, 1, Yolov7x_E_ELAN, [1280, 256]], # 10
+  ]
+
+head:
+  [[-1, 1, SPPCSPC, [640]], # 11
+
+   [[6, 8, 11], 1, IDetect_AFPN_P345, [nc, 256, anchors]],  # Detect(P3, P4, P5)
+  ]

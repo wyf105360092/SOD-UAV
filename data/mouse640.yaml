@@ -1,0 +1,7 @@
+train: E:\\dataset\\mouse\\640\\images\\train  # train images (relative to 'path') 128 images
+val: E:\\dataset\\mouse\\640\\images\\val  # val images (relative to 'path') 128 images
+test: E:\\dataset\\mouse\\640\\images\\val  #
+ 
+# Classes
+nc: 1  # number of classes
+names: ['mouse']  # class names

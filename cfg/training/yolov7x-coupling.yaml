@@ -1,0 +1,60 @@
+# parameters
+nc: 80  # number of classes
+depth_multiple: 1.0  # model depth multiple
+width_multiple: 1.0  # layer channel multiple
+
+# anchors
+anchors:
+  - [12,16, 19,36, 40,28]  # P3/8
+  - [36,75, 76,55, 72,146]  # P4/16
+  - [142,110, 192,243, 459,401]  # P5/32
+
+# yolov7 backbone
+backbone:
+  # [from, number, module, args]
+  [[-1, 1, Conv, [40, 3, 1]],  # 0
+  
+   [-1, 1, Conv, [80, 3, 2]],  # 1-P1/2      
+   [-1, 1, Conv, [80, 3, 1]],
+   
+   [-1, 1, Conv, [160, 3, 2]],  # 3-P2/4 
+   [-1, 1, Yolov7x_E_ELAN, [320, 64]], # 4
+
+   [-1, 1, V7DownSampling, [160]], # 5-P3/8
+   [-1, 1, Yolov7x_E_ELAN, [640, 128]], # 6
+   
+   [-1, 1, V7DownSampling, [320]], # 7-P4/16
+   [-1, 1, Yolov7x_E_ELAN, [1280, 256]], # 8
+
+   [-1, 1, V7DownSampling, [640]], # 9-P5/32
+   [-1, 1, Yolov7x_E_ELAN, [1280, 256]], # 10
+  ]
+
+head:
+  [[-1, 1, SPPCSPC, [640]], # 11
+   [-1, 1, Conv, [320, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   [8, 1, Conv, [320, 1, 1]], # 14 route backbone P4
+   [[-1, -2], 1, Concat, [1]], # 15
+
+   [-1, 1, Yolov7x_E_ELAN, [320, 256]], # 16
+
+   [-1, 1, Conv, [160, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   [6, 1, Conv, [160, 1, 1]], # 19 route backbone P3
+   [[-1, -2], 1, Concat, [1]], # 20
+
+   [-1, 1, Yolov7x_E_ELAN, [160, 128]], # 21
+   [[-1, 16], 1, V7DownSampling_Neck, [160]], # 22
+
+   [-1, 1, Yolov7x_E_ELAN, [320, 256]], # 23
+   [[-1, 11], 1, V7DownSampling_Neck, [320]], # 24
+
+   [-1, 1, Yolov7x_E_ELAN, [640, 512]], # 25
+
+   [21, 1, Conv, [320, 3, 1]], # 26-P3
+   [23, 1, Conv, [640, 3, 1]], # 27-P4
+   [25, 1, Conv, [1280, 3, 1]], # 28-P5
+
+   [[26,27,28], 1, IDetect, [nc, anchors]],  # Detect(P3, P4, P5)
+  ]

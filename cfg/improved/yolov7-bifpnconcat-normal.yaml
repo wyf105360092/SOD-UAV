@@ -1,0 +1,63 @@
+# parameters
+nc: 10  # number of classes
+depth_multiple: 1.0  # model depth multiple
+width_multiple: 1.0  # layer channel multiple
+
+fusion_mode: concat
+#node_mode: C2f
+head_channel: 256
+
+# anchors
+anchors: 3
+
+# yolov7 backbone
+backbone:
+  # [from, number, module, args]
+  [[-1, 1, Conv, [32, 3, 1]],  # 0
+  
+   [-1, 1, Conv, [64, 3, 2]],  # 1-P1/2      
+   [-1, 1, Conv, [64, 3, 1]],
+   
+   [-1, 1, Conv, [128, 3, 2]],  # 3-P2/4  
+   [-1, 1, Yolov7_E_ELAN, [256, 64]], # 4
+         
+   [-1, 1, V7DownSampling, [128]],  # 5-P3/8  
+   [-1, 1, Yolov7_E_ELAN, [512, 128]], # 6
+         
+   [-1, 1, V7DownSampling, [256]],  # 7-P4/16  
+   [-1, 1, Yolov7_E_ELAN, [1024, 256]], # 8
+         
+   [-1, 1, V7DownSampling, [512]],  # 9-P5/32  
+   [-1, 1, Yolov7_E_ELAN, [1024, 256]],  # 10
+  ]
+
+# yolov7 head
+head:
+  [[-1, 1, SPPCSPC, [512]], # 11
+
+  [6, 1, Conv, [head_channel]],  # 12-P3/8
+  [8, 1, Conv, [head_channel]],  # 13-P4/16
+  [11, 1, Conv, [head_channel]], # 14-P5/32
+
+  [-1, 1, nn.Upsample, [None, 2, 'nearest']], # 15 P5->P4
+  [[-1, 13], 1, Fusion, [fusion_mode]], # 16
+  [-1, 1, Yolov7_E_ELAN_NECK, [256, 128]], # 17-P4/16
+
+  [-1, 1, nn.Upsample, [None, 2, 'nearest']], # 18 P4->P3
+  [[-1, 12], 1, Fusion, [fusion_mode]], # 19
+  [-1, 1, Yolov7_E_ELAN_NECK, [128, 64]], # 20-P3/8
+
+  [-1, 1, Conv, [head_channel, 3, 2]], # 21 P3->P4
+  [[-1, 13, 17], 1, Fusion, [fusion_mode]], # 22
+  [-1, 1, Yolov7_E_ELAN_NECK, [128, 64]], # 23-P4/16
+
+  [-1, 1, Conv, [head_channel, 3, 2]], # 24 P4->P5
+  [[-1, 14], 1, Fusion, [fusion_mode]], # 25
+  [-1, 1, Yolov7_E_ELAN_NECK, [256, 128]], # 26-P5/32
+
+   [20, 1, RepConv, [256, 3, 1]], # 27-P2
+   [23, 1, RepConv, [512, 3, 1]], # 28-P3
+   [26, 1, RepConv, [1024, 3, 1]], # 29-P4
+
+   [[27, 28, 29], 1, IDetect, [nc, anchors]],   # Detect(P3, P4, P5)
+  ]
